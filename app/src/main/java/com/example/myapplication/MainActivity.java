@@ -178,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean isOperatorStart(char c) {
-        return c == '+' || c == '*' || c == '/';
+        return c == '+' || c == '*' || c == '/' || c == '.';
     }
 
 
@@ -250,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
                             replace = Button.getText().toString().replace(toReplace, formattedNumber);
                             replaceText(formattedNumber, Button, m, x, toReplace, pattern);
                         } else {
-                            replace = Button.getText().toString().replace(toReplace, resultString);
+                             replace = Button.getText().toString().replace(toReplace, resultString);
                             replaceText(replace, Button, m, x, toReplace, pattern);
                         }
                     } else if (splitsList.get(i).equals("/")) {
