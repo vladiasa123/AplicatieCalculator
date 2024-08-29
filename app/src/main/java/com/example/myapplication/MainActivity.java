@@ -14,49 +14,36 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
-    Double resultLeft;
-    Double resultRight;
-    int result;
-    String resultString;
-    String toReplace;
-    int finalResultOri;
-    int finalResultMinus;
-    int finalResultImpartit;
-    int finalResultPlus;
-    String semn;
-    String replace;
-    Pattern pattern = Pattern.compile("([x\\*/\\+\\-])");
-    Pattern pattern2 = Pattern.compile("([-+]?[0-9]*\\.?[0-9]+)[\\/\\\\*]+([-+]?[0-9]*\\.?[0-9]+)");
+   private Double resultLeft;
+   private Double resultRight;
+   private String resultString;
+   private String toReplace;
+   private String replace;
+   private Pattern patternVerificareExistentaCaracterelorSpeciale = Pattern.compile("([x\\*/\\+\\-])");
+   private Pattern patternVerificareNumarDecimalNegativ = Pattern.compile("(^ -?\\d+(\\.)\\d+$)");
 
-    Pattern pattern3 = Pattern.compile("(^ -?\\d+(\\.)\\d+$)");
+   private Pattern pattern4 = Pattern.compile("(^ -?\\d+|(\\.)|\\d+$)");
 
-    Pattern pattern4 = Pattern.compile("(^ -?\\d+|(\\.)|\\d+$)");
-    String resultIntString;
-    int resultLeftInt = 0;
-    int resultRightInt = 0;
-    int resultStringInt = 0;
+   private String math;
+   private TextView Button;
+   private StringBuilder currentInput;
+   private char lastChar = ' ';
 
-    String math;
-    int resultWithoutDecimals;
-    private static TextView Button;
-    private StringBuilder currentInput;
-    private char lastChar = ' ';
-
-    public static boolean containsDecimal(String text) {
+    private boolean containsDecimal(String text) {
         return text.contains(".");
     }
 
-    public static boolean endsWithZero(double number) {
+    private boolean endsWithZero(double number) {
         return number % 1 == 0;
     }
 
 
-    private static boolean containsSpecialCharacters(String text, Pattern pattern) {
+    private boolean containsSpecialCharacters(String text, Pattern pattern) {
         Matcher matcher = pattern.matcher(text);
         return matcher.find();
     }
 
-    public static boolean isHyphenNumber(String str, Pattern pattern4, Pattern pattern3) {
+   private boolean isHyphenNumber(String str, Pattern pattern4, Pattern pattern3) {
         if (str == null || str.isEmpty()) {
             return false;
         } else {
@@ -67,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public static boolean hasMoreThanTwoDecimals(String numberStr) {
+    private boolean hasMoreThanTwoDecimals(String numberStr) {
         int indexOfDecimal = numberStr.indexOf('.');
         if (indexOfDecimal == -1) {
             return false;
@@ -76,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
         return decimalPart.length() > 2;
     }
 
-    public static String removeTrailingZero(double number) {
+    private String removeTrailingZero(double number) {
         if (number == (int) number) {
             return Integer.toString((int) number);
         } else {
@@ -84,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void replaceText(String replace, TextView Button, Matcher m, Pattern x, String toReplace, Pattern pattern) {
+    private void replaceText(String replace, TextView Button, Matcher m, Pattern x, String toReplace, Pattern pattern) {
         if (containsDecimal(replace)) {
             Button.setText(replace);
             m = x.matcher(toReplace);
@@ -100,9 +87,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -211,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
         math = Button.getText().toString();
         Pattern x = Pattern.compile(regex);
 
-        while (containsSpecialCharacters(Button.getText().toString(), pattern) && isHyphenNumber(Button.getText().toString(), pattern3, pattern4) == false ) {
+        while (containsSpecialCharacters(Button.getText().toString(), patternVerificareExistentaCaracterelorSpeciale) && isHyphenNumber(Button.getText().toString(), patternVerificareNumarDecimalNegativ, pattern4) == false ) {
             Matcher m = x.matcher(math);
             List<String> splitsList = new ArrayList<>();
 
@@ -248,10 +232,10 @@ public class MainActivity extends AppCompatActivity {
                             DecimalFormat df = new DecimalFormat("#.00");
                             String formattedNumber = df.format(number);
                             replace = Button.getText().toString().replace(toReplace, formattedNumber);
-                            replaceText(formattedNumber, Button, m, x, toReplace, pattern);
+                            replaceText(formattedNumber, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
                         } else {
                              replace = Button.getText().toString().replace(toReplace, resultString);
-                            replaceText(replace, Button, m, x, toReplace, pattern);
+                            replaceText(replace, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
                         }
                     } else if (splitsList.get(i).equals("/")) {
                         resultLeft = Double.parseDouble(splitsList.get(i - 1));
@@ -276,10 +260,10 @@ public class MainActivity extends AppCompatActivity {
                             DecimalFormat df = new DecimalFormat("#.00");
                             String formattedNumber = df.format(number);
                             replace = Button.getText().toString().replace(toReplace, formattedNumber);
-                            replaceText(formattedNumber, Button, m, x, toReplace, pattern);
+                            replaceText(formattedNumber, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
                         } else {
                             replace = Button.getText().toString().replace(toReplace, resultString);
-                            replaceText(replace, Button, m, x, toReplace, pattern);
+                            replaceText(replace, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
                         }
 
                     }
@@ -317,10 +301,10 @@ public class MainActivity extends AppCompatActivity {
                             DecimalFormat df = new DecimalFormat("#.00");
                             String formattedNumber = df.format(number);
                             replace = Button.getText().toString().replace(toReplace, formattedNumber);
-                            replaceText(formattedNumber, Button, m, x, toReplace, pattern);
+                            replaceText(formattedNumber, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
                         } else {
                             replace = Button.getText().toString().replace(toReplace, resultString);
-                            replaceText(replace, Button, m, x, toReplace, pattern);
+                            replaceText(replace, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
                         }
                     } else if (splitsList.get(i).equals("-")) {
                         resultLeft = Double.parseDouble(splitsList.get(i - 1));
@@ -345,10 +329,10 @@ public class MainActivity extends AppCompatActivity {
                             DecimalFormat df = new DecimalFormat("#.00");
                             String formattedNumber = df.format(number);
                             replace = Button.getText().toString().replace(toReplace, formattedNumber);
-                            replaceText(formattedNumber, Button, m, x, toReplace, pattern);
+                            replaceText(formattedNumber, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
                         } else {
                             replace = Button.getText().toString().replace(toReplace, resultString);
-                            replaceText(replace, Button, m, x, toReplace, pattern);
+                            replaceText(replace, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
                         }
 
                     }
