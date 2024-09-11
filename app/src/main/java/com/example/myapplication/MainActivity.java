@@ -14,27 +14,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
-    private Double resultLeft;
-    private Double resultRight;
-    private String resultString;
+    DecimalFormat df = new DecimalFormat("#.00");
+    private Double resultLeftPartOfOperationSign;
+    private Double resultRightPartOfOperationSign;
+    private String finalResultInStringFormat;
     private String toReplace;
     private String replace;
-    private Pattern patternCheckForSpecialCharacters = Pattern.compile("([x\\*/\\+\\-])");
-    private Pattern patternCheckForNegativeDecimalNumber = Pattern.compile("(^ -?\\d+(\\.)\\d+$)");
-
-    private Pattern StartsWithPozitiveOrNegativeNumber = Pattern.compile("(^ -?\\d+|(\\.)|\\d+$)");
-
+    private final Pattern patternCheckForSpecialCharacters = Pattern.compile("([x\\*/\\+\\-])");
+    private final Pattern patternCheckForNegativeDecimalNumber = Pattern.compile("(^ -?\\d+(\\.)\\d+$)");
+    private final Pattern startsWithPozitiveOrNegativeNumber = Pattern.compile("(^ -?\\d+|(\\.)|\\d+$)");
     private String math;
-    private TextView DisplayedText;
+    private TextView displayedText;
     private StringBuilder currentInput;
     private char lastChar = ' ';
-    DecimalFormat df = new DecimalFormat("#.00");
 
     private boolean containsDecimal(String text) {
         return text.contains(".");
     }
 
-    private boolean ChecksForWholeNumber(double number) {
+    private boolean decimalThatEndsWithZero(double number) {
         String numberStr = Double.toString(number);
         return numberStr.contains(".") && numberStr.endsWith("0");
     }
@@ -45,12 +43,12 @@ public class MainActivity extends AppCompatActivity {
         return matcher.find();
     }
 
-    private boolean isHyphenNumber(String str, Pattern StartsWithPozitiveOrNegativeNumber, Pattern pattern3) {
+    private boolean isHyphenNumber(String str, Pattern startsWithPozitiveOrNegativeNumber, Pattern pattern3) {
         if (str == null || str.isEmpty()) {
             return false;
         } else {
             Matcher matcher3 = pattern3.matcher(str);
-            Matcher matcher4 = StartsWithPozitiveOrNegativeNumber.matcher(str);
+            Matcher matcher4 = startsWithPozitiveOrNegativeNumber.matcher(str);
             return matcher3.matches() || matcher4.matches();
         }
     }
@@ -74,39 +72,39 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void Calculation(String calculationSign) {
-        if (ChecksForWholeNumber(resultLeft) && !ChecksForWholeNumber(resultRight)) {
-            int intResultLeft = (int) (double) resultLeft;
-            toReplace = intResultLeft + calculationSign + resultRight;
-        } else if (ChecksForWholeNumber(resultRight) && !ChecksForWholeNumber(resultLeft)) {
-            int intResultRight = (int) (double) resultRight;
-            toReplace = resultLeft + calculationSign + intResultRight;
-        } else if (ChecksForWholeNumber(resultRight) && ChecksForWholeNumber(resultLeft)) {
-            int intResultRight = (int) (double) resultRight;
-            int intResultLeft = (int) (double) resultLeft;
-            toReplace = intResultLeft + calculationSign + intResultRight;
-        } else if (!ChecksForWholeNumber(resultRight) && !ChecksForWholeNumber(resultLeft)) {
-            toReplace = resultLeft + calculationSign + resultRight;
+        if (decimalThatEndsWithZero(resultLeftPartOfOperationSign) && !decimalThatEndsWithZero(resultRightPartOfOperationSign)) {
+            int intresultLeftPartOfOperationSign = (int) (double) resultLeftPartOfOperationSign;
+            toReplace = intresultLeftPartOfOperationSign + calculationSign + resultRightPartOfOperationSign;
+        } else if (decimalThatEndsWithZero(resultRightPartOfOperationSign) && !decimalThatEndsWithZero(resultLeftPartOfOperationSign)) {
+            int intresultRightPartOfOperationSign = (int) (double) resultRightPartOfOperationSign;
+            toReplace = resultLeftPartOfOperationSign + calculationSign + intresultRightPartOfOperationSign;
+        } else if (decimalThatEndsWithZero(resultRightPartOfOperationSign) && decimalThatEndsWithZero(resultLeftPartOfOperationSign)) {
+            int intresultRightPartOfOperationSign = (int) (double) resultRightPartOfOperationSign;
+            int intresultLeftPartOfOperationSign = (int) (double) resultLeftPartOfOperationSign;
+            toReplace = intresultLeftPartOfOperationSign + calculationSign + intresultRightPartOfOperationSign;
+        } else if (!decimalThatEndsWithZero(resultRightPartOfOperationSign) && !decimalThatEndsWithZero(resultLeftPartOfOperationSign)) {
+            toReplace = resultLeftPartOfOperationSign + calculationSign + resultRightPartOfOperationSign;
         }
     }
 
-    private void function(List<String> splitsList, boolean calculated, double finalResult, Pattern x, Matcher m, int i) {
-        if ("*".equals(splitsList.get(i)) || "/".equals(splitsList.get(i)) || "+".equals(splitsList.get(i)) || "-".equals(splitsList.get(i)) ) {
+    private void calculateTheFinalResult(List<String> splitsList, boolean calculated, double finalResult, Pattern x, Matcher m, int i) {
+        if ("*".equals(splitsList.get(i)) || "/".equals(splitsList.get(i)) || "+".equals(splitsList.get(i)) || "-".equals(splitsList.get(i))) {
             calculated = true;
-            resultLeft = Double.parseDouble(splitsList.get(i - 1));
-            resultRight = Double.parseDouble(splitsList.get(i + 1));
+            resultLeftPartOfOperationSign = Double.parseDouble(splitsList.get(i - 1));
+            resultRightPartOfOperationSign = Double.parseDouble(splitsList.get(i + 1));
             switch (splitsList.get(i)) {
                 case "+":
-                    finalResult += resultLeft + resultRight;
+                    finalResult += resultLeftPartOfOperationSign + resultRightPartOfOperationSign;
                     break;
                 case "-":
-                    finalResult += resultLeft - resultRight;
+                    finalResult += resultLeftPartOfOperationSign - resultRightPartOfOperationSign;
                     break;
                 case "*":
-                    finalResult += resultLeft * resultRight;
+                    finalResult += resultLeftPartOfOperationSign * resultRightPartOfOperationSign;
                     break;
                 case "/":
-                    if (resultRight != 0) {
-                        finalResult += resultLeft / resultRight;
+                    if (resultRightPartOfOperationSign != 0) {
+                        finalResult += resultLeftPartOfOperationSign / resultRightPartOfOperationSign;
                     } else {
                         System.out.println("Error: Division by zero");
                     }
@@ -115,20 +113,19 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println("Error: Invalid operator");
             }
             Calculation(splitsList.get(i));
-            resultString = removeTrailingZero(finalResult);
-            if (hasMoreThanTwoDecimals(resultString)) {
-                double number = Double.parseDouble(resultString);
+            finalResultInStringFormat = removeTrailingZero(finalResult);
+            if (hasMoreThanTwoDecimals(finalResultInStringFormat)) {
+                double number = Double.parseDouble(finalResultInStringFormat);
                 String formattedNumber = df.format(number);
-                replace = DisplayedText.getText().toString().replace(toReplace, formattedNumber);
-                replaceText(formattedNumber, DisplayedText, m, x, toReplace, patternCheckForSpecialCharacters);
+                replace = displayedText.getText().toString().replace(toReplace, formattedNumber);
+                replaceText(formattedNumber, displayedText, m, x, toReplace, patternCheckForSpecialCharacters);
             } else {
-                replace = DisplayedText.getText().toString().replace(toReplace, resultString);
-                replaceText(replace, DisplayedText, m, x, toReplace, patternCheckForSpecialCharacters);
+                replace = displayedText.getText().toString().replace(toReplace, finalResultInStringFormat);
+                replaceText(replace, displayedText, m, x, toReplace, patternCheckForSpecialCharacters);
             }
         }
 
     }
-
 
 
     private void replaceText(String replace, TextView Button, Matcher m, Pattern x, String toReplace, Pattern pattern) {
@@ -171,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
         Button buttonX = findViewById(R.id.buttonX);
         Button buttonMinus = findViewById(R.id.buttonMinus);
 
-        DisplayedText  = findViewById(R.id.TextView);
+        displayedText = findViewById(R.id.TextView);
 
         View.OnClickListener buttonClickListener = new View.OnClickListener() {
             String buttonText;
@@ -189,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (id == R.id.buttonDEL) {
-                    DisplayedText.setText(" ");
+                    displayedText.setText(" ");
                 }
 
 
@@ -230,28 +227,28 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        if (DisplayedText.getText().toString().equals(" ") && digit == '0') {
+        if (displayedText.getText().toString().equals(" ") && digit == '0') {
             return;
         }
 
-        if (DisplayedText.getText().toString().equals(" ") && isOperatorStart(digit)) {
+        if (displayedText.getText().toString().equals(" ") && isOperatorStart(digit)) {
             return;
         }
 
-        if (DisplayedText == null) {
+        if (displayedText == null) {
             currentInput.append(digit);
-            DisplayedText.setText(currentInput.toString());
+            displayedText.setText(currentInput.toString());
         } else {
-            DisplayedText.append(Character.toString(digit));
+            displayedText.append(Character.toString(digit));
         }
         lastChar = digit;
     }
 
     public void functieCalcul(String regex) {
-        math = DisplayedText.getText().toString();
+        math = displayedText.getText().toString();
         Pattern x = Pattern.compile(regex);
 
-        while (containsSpecialCharacters(DisplayedText.getText().toString(), patternCheckForSpecialCharacters) && isHyphenNumber(DisplayedText.getText().toString(), patternCheckForNegativeDecimalNumber, StartsWithPozitiveOrNegativeNumber) == false) {
+        while (containsSpecialCharacters(displayedText.getText().toString(), patternCheckForSpecialCharacters) && !isHyphenNumber(displayedText.getText().toString(), patternCheckForNegativeDecimalNumber, startsWithPozitiveOrNegativeNumber)) {
             Matcher m = x.matcher(math);
             List<String> splitsList = new ArrayList<>();
 
@@ -263,14 +260,14 @@ public class MainActivity extends AppCompatActivity {
             boolean calculated = false;
             for (int i = 0; i < splitsList.size(); i++) {
                 double finalResult = 0;
-                function(splitsList, calculated, finalResult, x, m, i);
+                calculateTheFinalResult(splitsList, calculated, finalResult, x, m, i);
             }
             if (calculated) {
                 continue;
             }
             for (int i = 0; i < splitsList.size(); i++) {
                 double finalResult = 0;
-                function(splitsList, calculated, finalResult, x, m, i);
+                calculateTheFinalResult(splitsList, calculated, finalResult, x, m, i);
                 if (calculated) {
                     continue;
                 }
