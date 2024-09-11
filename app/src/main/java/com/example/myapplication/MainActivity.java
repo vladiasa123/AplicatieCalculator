@@ -14,27 +14,27 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
-   private Double resultLeft;
-   private Double resultRight;
-   private String resultString;
-   private String toReplace;
-   private String replace;
-   private Pattern patternVerificareExistentaCaracterelorSpeciale = Pattern.compile("([x\\*/\\+\\-])");
-   private Pattern patternVerificareNumarDecimalNegativ = Pattern.compile("(^ -?\\d+(\\.)\\d+$)");
-
-   private Pattern pattern4 = Pattern.compile("(^ -?\\d+|(\\.)|\\d+$)");
-
-   private String math;
-   private TextView Button;
-   private StringBuilder currentInput;
-   private char lastChar = ' ';
+    DecimalFormat df = new DecimalFormat("#.00");
+    private Double resultLeftPartOfOperationSign;
+    private Double resultRightPartOfOperationSign;
+    private String finalResultInStringFormat;
+    private String toReplace;
+    private String replace;
+    private final Pattern patternCheckForSpecialCharacters = Pattern.compile("([x\\*/\\+\\-])");
+    private final Pattern patternCheckForNegativeDecimalNumber = Pattern.compile("(^ -?\\d+(\\.)\\d+$)");
+    private final Pattern startsWithPozitiveOrNegativeNumber = Pattern.compile("(^ -?\\d+|(\\.)|\\d+$)");
+    private String math;
+    private TextView displayedText;
+    private StringBuilder currentInput;
+    private char lastChar = ' ';
 
     private boolean containsDecimal(String text) {
         return text.contains(".");
     }
 
-    private boolean endsWithZero(double number) {
-        return number % 1 == 0;
+    private boolean decimalThatEndsWithZero(double number) {
+        String numberStr = Double.toString(number);
+        return numberStr.contains(".") && numberStr.endsWith("0");
     }
 
 
@@ -43,12 +43,12 @@ public class MainActivity extends AppCompatActivity {
         return matcher.find();
     }
 
-   private boolean isHyphenNumber(String str, Pattern pattern4, Pattern pattern3) {
+    private boolean isHyphenNumber(String str, Pattern startsWithPozitiveOrNegativeNumber, Pattern pattern3) {
         if (str == null || str.isEmpty()) {
             return false;
         } else {
             Matcher matcher3 = pattern3.matcher(str);
-            Matcher matcher4 = pattern4.matcher(str);
+            Matcher matcher4 = startsWithPozitiveOrNegativeNumber.matcher(str);
             return matcher3.matches() || matcher4.matches();
         }
     }
@@ -71,6 +71,63 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void Calculation(String calculationSign) {
+        if (decimalThatEndsWithZero(resultLeftPartOfOperationSign) && !decimalThatEndsWithZero(resultRightPartOfOperationSign)) {
+            int intresultLeftPartOfOperationSign = (int) (double) resultLeftPartOfOperationSign;
+            toReplace = intresultLeftPartOfOperationSign + calculationSign + resultRightPartOfOperationSign;
+        } else if (decimalThatEndsWithZero(resultRightPartOfOperationSign) && !decimalThatEndsWithZero(resultLeftPartOfOperationSign)) {
+            int intresultRightPartOfOperationSign = (int) (double) resultRightPartOfOperationSign;
+            toReplace = resultLeftPartOfOperationSign + calculationSign + intresultRightPartOfOperationSign;
+        } else if (decimalThatEndsWithZero(resultRightPartOfOperationSign) && decimalThatEndsWithZero(resultLeftPartOfOperationSign)) {
+            int intresultRightPartOfOperationSign = (int) (double) resultRightPartOfOperationSign;
+            int intresultLeftPartOfOperationSign = (int) (double) resultLeftPartOfOperationSign;
+            toReplace = intresultLeftPartOfOperationSign + calculationSign + intresultRightPartOfOperationSign;
+        } else if (!decimalThatEndsWithZero(resultRightPartOfOperationSign) && !decimalThatEndsWithZero(resultLeftPartOfOperationSign)) {
+            toReplace = resultLeftPartOfOperationSign + calculationSign + resultRightPartOfOperationSign;
+        }
+    }
+
+    private void calculateTheFinalResult(List<String> splitsList, boolean calculated, double finalResult, Pattern x, Matcher m, int i) {
+        if ("*".equals(splitsList.get(i)) || "/".equals(splitsList.get(i)) || "+".equals(splitsList.get(i)) || "-".equals(splitsList.get(i))) {
+            calculated = true;
+            resultLeftPartOfOperationSign = Double.parseDouble(splitsList.get(i - 1));
+            resultRightPartOfOperationSign = Double.parseDouble(splitsList.get(i + 1));
+            switch (splitsList.get(i)) {
+                case "+":
+                    finalResult += resultLeftPartOfOperationSign + resultRightPartOfOperationSign;
+                    break;
+                case "-":
+                    finalResult += resultLeftPartOfOperationSign - resultRightPartOfOperationSign;
+                    break;
+                case "*":
+                    finalResult += resultLeftPartOfOperationSign * resultRightPartOfOperationSign;
+                    break;
+                case "/":
+                    if (resultRightPartOfOperationSign != 0) {
+                        finalResult += resultLeftPartOfOperationSign / resultRightPartOfOperationSign;
+                    } else {
+                        System.out.println("Error: Division by zero");
+                    }
+                    break;
+                default:
+                    System.out.println("Error: Invalid operator");
+            }
+            Calculation(splitsList.get(i));
+            finalResultInStringFormat = removeTrailingZero(finalResult);
+            if (hasMoreThanTwoDecimals(finalResultInStringFormat)) {
+                double number = Double.parseDouble(finalResultInStringFormat);
+                String formattedNumber = df.format(number);
+                replace = displayedText.getText().toString().replace(toReplace, formattedNumber);
+                replaceText(formattedNumber, displayedText, m, x, toReplace, patternCheckForSpecialCharacters);
+            } else {
+                replace = displayedText.getText().toString().replace(toReplace, finalResultInStringFormat);
+                replaceText(replace, displayedText, m, x, toReplace, patternCheckForSpecialCharacters);
+            }
+        }
+
+    }
+
+
     private void replaceText(String replace, TextView Button, Matcher m, Pattern x, String toReplace, Pattern pattern) {
         if (containsDecimal(replace)) {
             Button.setText(replace);
@@ -85,6 +142,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -97,7 +155,6 @@ public class MainActivity extends AppCompatActivity {
         Button button3 = findViewById(R.id.button3);
         Button buttonDot = findViewById(R.id.buttonDot);
         Button button2 = findViewById(R.id.button2);
-        Button buttonEgal = findViewById(R.id.button3);
         Button button4 = findViewById(R.id.button4);
         Button button5 = findViewById(R.id.button5);
         Button button6 = findViewById(R.id.button6);
@@ -111,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
         Button buttonX = findViewById(R.id.buttonX);
         Button buttonMinus = findViewById(R.id.buttonMinus);
 
-        Button = findViewById(R.id.TextView);
+        displayedText = findViewById(R.id.TextView);
 
         View.OnClickListener buttonClickListener = new View.OnClickListener() {
             String buttonText;
@@ -119,19 +176,18 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 int id = v.getId();
-                    if (id == R.id.buttonX || id == R.id.buttonMinus || id == R.id.buttonDot || id == R.id.button0 || id == R.id.button1 || id == R.id.button2 || id == R.id.button3 || id == R.id.button4 || id == R.id.button5 || id == R.id.button6 || id == R.id.button7 || id == R.id.button8 || id == R.id.button9 || id == R.id.buttonAdunare || id == R.id.buttonImpartire || id == R.id.buttonDEL) {
-                        Button clickedButton = (Button) v;
-                        buttonText = clickedButton.getText().toString();
-                        appendDigit(buttonText.charAt(0));
-                    }
-                    if (id == R.id.buttonEqual) {
-                        functieCalcul("(^\\ -*\\d{1,10}\\.{0,1}\\d{0,10})|([x\\*/\\+\\-])|(\\d{1,10}\\.{0,1}\\d{0,10})");
-                    }
+                if (id == R.id.buttonX || id == R.id.buttonMinus || id == R.id.buttonDot || id == R.id.button0 || id == R.id.button1 || id == R.id.button2 || id == R.id.button3 || id == R.id.button4 || id == R.id.button5 || id == R.id.button6 || id == R.id.button7 || id == R.id.button8 || id == R.id.button9 || id == R.id.buttonAdunare || id == R.id.buttonImpartire || id == R.id.buttonDEL) {
+                    Button clickedButton = (Button) v;
+                    buttonText = clickedButton.getText().toString();
+                    appendDigit(buttonText.charAt(0));
+                }
+                if (id == R.id.buttonEqual) {
+                    functieCalcul("(^\\ -*\\d{1,10}\\.{0,1}\\d{0,10})|([x\\*/\\+\\-])|(\\d{1,10}\\.{0,1}\\d{0,10})");
+                }
 
-                    if (id == R.id.buttonDEL) {
-                        Button.setText(" ");
-                    }
-
+                if (id == R.id.buttonDEL) {
+                    displayedText.setText(" ");
+                }
 
 
             }
@@ -166,36 +222,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
     private void appendDigit(char digit) {
-            if (isOperator(digit) && isOperator(lastChar)) {
-                return;
-            }
-
-        if (Button.getText().toString().equals(" ") && digit == '0') {
+        if (isOperator(digit) && isOperator(lastChar)) {
             return;
         }
 
-        if (Button.getText().toString().equals(" ") && isOperatorStart(digit)){
+        if (displayedText.getText().toString().equals(" ") && digit == '0') {
             return;
         }
 
-            if (Button == null) {
-                currentInput.append(digit);
-                Button.setText(currentInput.toString());
-            } else {
-                Button.append(Character.toString(digit));
-            }
-            lastChar = digit;
+        if (displayedText.getText().toString().equals(" ") && isOperatorStart(digit)) {
+            return;
         }
 
-
+        if (displayedText == null) {
+            currentInput.append(digit);
+            displayedText.setText(currentInput.toString());
+        } else {
+            displayedText.append(Character.toString(digit));
+        }
+        lastChar = digit;
+    }
 
     public void functieCalcul(String regex) {
-        math = Button.getText().toString();
+        math = displayedText.getText().toString();
         Pattern x = Pattern.compile(regex);
 
-        while (containsSpecialCharacters(Button.getText().toString(), patternVerificareExistentaCaracterelorSpeciale) && isHyphenNumber(Button.getText().toString(), patternVerificareNumarDecimalNegativ, pattern4) == false ) {
+        while (containsSpecialCharacters(displayedText.getText().toString(), patternCheckForSpecialCharacters) && !isHyphenNumber(displayedText.getText().toString(), patternCheckForNegativeDecimalNumber, startsWithPozitiveOrNegativeNumber)) {
             Matcher m = x.matcher(math);
             List<String> splitsList = new ArrayList<>();
 
@@ -207,140 +260,17 @@ public class MainActivity extends AppCompatActivity {
             boolean calculated = false;
             for (int i = 0; i < splitsList.size(); i++) {
                 double finalResult = 0;
-                if ("*".equals(splitsList.get(i)) || "/".equals(splitsList.get(i))) {
-                    calculated = true;
-                    if (splitsList.get(i).equals("*")) {
-                        resultLeft = Double.parseDouble(splitsList.get(i - 1));
-                        resultRight = Double.parseDouble(splitsList.get(i + 1));
-                        finalResult += resultLeft * resultRight;
-                        if (endsWithZero(resultLeft) && !endsWithZero(resultRight)) {
-                            int intResultLeft = (int) (double) resultLeft;
-                            toReplace = intResultLeft + "*" + resultRight;
-                        } else if (endsWithZero(resultRight) && !endsWithZero(resultLeft)) {
-                            int intResultRight = (int) (double) resultRight;
-                            toReplace = resultLeft + "*" + intResultRight;
-                        } else if (endsWithZero(resultRight) && endsWithZero(resultLeft)) {
-                            int intResultRight = (int) (double) resultRight;
-                            int intResultLeft = (int) (double) resultLeft;
-                            toReplace = intResultLeft + "*" + intResultRight;
-                        }else if (!endsWithZero(resultRight) && !endsWithZero(resultLeft)) {
-                            toReplace = resultLeft + "*" + resultRight;
-                        }
-                        resultString = removeTrailingZero(finalResult);
-                        if (hasMoreThanTwoDecimals(resultString)) {
-                            double number = Double.parseDouble(resultString);
-                            DecimalFormat df = new DecimalFormat("#.00");
-                            String formattedNumber = df.format(number);
-                            replace = Button.getText().toString().replace(toReplace, formattedNumber);
-                            replaceText(formattedNumber, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
-                        } else {
-                             replace = Button.getText().toString().replace(toReplace, resultString);
-                            replaceText(replace, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
-                        }
-                    } else if (splitsList.get(i).equals("/")) {
-                        resultLeft = Double.parseDouble(splitsList.get(i - 1));
-                        resultRight = Double.parseDouble(splitsList.get(i + 1));
-                        finalResult += resultLeft / resultRight;
-                        if (endsWithZero(resultLeft) && !endsWithZero(resultRight)) {
-                            int intResultLeft = (int) (double) resultLeft;
-                            toReplace = intResultLeft + "/" + resultRight;
-                        } else if (endsWithZero(resultRight) && !endsWithZero(resultLeft)) {
-                            int intResultRight = (int) (double) resultRight;
-                            toReplace = resultLeft + "/" + intResultRight;
-                        } else if (endsWithZero(resultRight) && endsWithZero(resultLeft)) {
-                            int intResultRight = (int) (double) resultRight;
-                            int intResultLeft = (int) (double) resultLeft;
-                            toReplace = intResultLeft + "/" + intResultRight;
-                        }else if (!endsWithZero(resultRight) && !endsWithZero(resultLeft)) {
-                            toReplace = resultLeft + "/" + resultRight;
-                        }
-                        resultString = removeTrailingZero(finalResult);
-                        if (hasMoreThanTwoDecimals(resultString)) {
-                            double number = Double.parseDouble(resultString);
-                            DecimalFormat df = new DecimalFormat("#.00");
-                            String formattedNumber = df.format(number);
-                            replace = Button.getText().toString().replace(toReplace, formattedNumber);
-                            replaceText(formattedNumber, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
-                        } else {
-                            replace = Button.getText().toString().replace(toReplace, resultString);
-                            replaceText(replace, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
-                        }
-
-                    }
-                    break;
-                }
+                calculateTheFinalResult(splitsList, calculated, finalResult, x, m, i);
             }
             if (calculated) {
                 continue;
             }
             for (int i = 0; i < splitsList.size(); i++) {
                 double finalResult = 0;
-                String resultDouble;
-                if ("+".equals(splitsList.get(i)) || "-".equals(splitsList.get(i))) {
-                    calculated = true;
-                    if (splitsList.get(i).equals("+")) {
-                        resultLeft = Double.parseDouble(splitsList.get(i - 1));
-                        resultRight = Double.parseDouble(splitsList.get(i + 1));
-                        finalResult += resultLeft + resultRight;
-                        if (endsWithZero(resultLeft) && !endsWithZero(resultRight)) {
-                            int intResultLeft = (int) (double) resultLeft;
-                            toReplace = intResultLeft + "+" + resultRight;
-                        } else if (endsWithZero(resultRight) && !endsWithZero(resultLeft)) {
-                            int intResultRight = (int) (double) resultRight;
-                            toReplace = resultLeft + "+" + intResultRight;
-                        } else if (endsWithZero(resultRight) && endsWithZero(resultLeft)) {
-                            int intResultRight = (int) (double) resultRight;
-                            int intResultLeft = (int) (double) resultLeft;
-                            toReplace = intResultLeft + "+" + intResultRight;
-                        }else if (!endsWithZero(resultRight) && !endsWithZero(resultLeft)) {
-                            toReplace = resultLeft + "+" + resultRight;
-                        }
-                        resultString = removeTrailingZero(finalResult);
-                        if (hasMoreThanTwoDecimals(resultString)) {
-                            double number = Double.parseDouble(resultString);
-                            DecimalFormat df = new DecimalFormat("#.00");
-                            String formattedNumber = df.format(number);
-                            replace = Button.getText().toString().replace(toReplace, formattedNumber);
-                            replaceText(formattedNumber, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
-                        } else {
-                            replace = Button.getText().toString().replace(toReplace, resultString);
-                            replaceText(replace, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
-                        }
-                    } else if (splitsList.get(i).equals("-")) {
-                        resultLeft = Double.parseDouble(splitsList.get(i - 1));
-                        resultRight = Double.parseDouble(splitsList.get(i + 1));
-                        finalResult += resultLeft - resultRight;
-                        if (endsWithZero(resultLeft) && !endsWithZero(resultRight)) {
-                            int intResultLeft = (int) (double) resultLeft;
-                            toReplace = intResultLeft + "-" + resultRight;
-                        } else if (endsWithZero(resultRight) && !endsWithZero(resultLeft)) {
-                            int intResultRight = (int) (double) resultRight;
-                            toReplace = resultLeft + "-" + intResultRight;
-                        } else if (endsWithZero(resultRight) && endsWithZero(resultLeft)) {
-                            int intResultRight = (int) (double) resultRight;
-                            int intResultLeft = (int) (double) resultLeft;
-                            toReplace = intResultLeft + "-" + intResultRight;
-                        }else if (!endsWithZero(resultRight) && !endsWithZero(resultLeft)) {
-                            toReplace = resultLeft + "-" + resultRight;
-                        }
-                        resultString = removeTrailingZero(finalResult);
-                        if (hasMoreThanTwoDecimals(resultString)) {
-                            double number = Double.parseDouble(resultString);
-                            DecimalFormat df = new DecimalFormat("#.00");
-                            String formattedNumber = df.format(number);
-                            replace = Button.getText().toString().replace(toReplace, formattedNumber);
-                            replaceText(formattedNumber, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
-                        } else {
-                            replace = Button.getText().toString().replace(toReplace, resultString);
-                            replaceText(replace, Button, m, x, toReplace, patternVerificareExistentaCaracterelorSpeciale);
-                        }
-
-                    }
-                    break;
+                calculateTheFinalResult(splitsList, calculated, finalResult, x, m, i);
+                if (calculated) {
+                    continue;
                 }
-            }
-            if (calculated) {
-                continue;
             }
         }
     }
